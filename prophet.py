@@ -1,10 +1,13 @@
 import pandas as pd
 from prophet import Prophet
-from prophet.diagnostics import cross_validation
+from prophet.diagnostics import cross_validation, performance_metrics
+from prophet.plot import plot_cross_validation_metric
+
+df = pd.read_csv('X:\\SensorMLDataset_small.csv')
+labels = df.columns
 
 
-def predict(df, start, end):
-    labels = df.columns
+def predict(start, end):
     df[labels[0]] = pd.to_datetime(df[labels[0]], format='%m/%d/%Y %H:%M')
 
     models = []  # pentru fiecare parametru, adaugam modelul antrenat intr-o lista
@@ -26,12 +29,28 @@ def predict(df, start, end):
     return models  # returnam lista cu modelele antrenate
 
 
-def main():
-    df = pd.read_csv('X:\\SensorMLDataset_small.csv')
-    models = predict(df, 0, 1000)
-
+def get_cross_validation():
+    models = predict(0, 1000)
+    df_cv = []
     for model in models:
-        df_cv = cross_validation(model, initial='168 hours', period='168 hours', horizon='48 hours')
+        df_cv += [
+            cross_validation(model, initial='168 hours', period='168 hours', horizon='48 hours')]
+    i = 1
+    for df_cross_err in df_cv:
+        df_p = performance_metrics(df_cross_err)
+        print(f"---------{labels[i]}---------\n", df_p.tail(1))
+        try:
+            plot_cross_validation_metric(pd.DataFrame(df_cross_err), metric='mape').savefig(
+                f"MAPE - {str(labels[i])}.png")
+            i += 1
+        except TypeError:
+            plot_cross_validation_metric(pd.DataFrame(df_cross_err), metric='mae').savefig(
+                f"MAE - {str(labels[i])}.png")
+            i += 1
+
+
+def main():
+    get_cross_validation()
 
 
 if __name__ == '__main__':
