@@ -47,28 +47,22 @@ def calculate_boxplots(df):
             plt.close()
 
 def calculate_correlation_matrix(df):
-    # Select only numeric columns
     numeric_columns = df.select_dtypes(include='number')
 
-    # Calculating the correlation matrix
     corr_matrix = numeric_columns.corr()
 
-    # Create the directory if it does not exist
     output_dir = "./correlation_matrix"
     os.makedirs(output_dir, exist_ok=True)
 
-    # Plotting the heatmap for the correlation matrix
     plt.figure(figsize=(15, 10))
     sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt=".2f", linewidths=.5,
                 cbar_kws={'label': 'Correlation Coefficient'})
     plt.title('Correlation Matrix Heatmap')
 
-    # Save the figure
     output_path = os.path.join(output_dir, 'correlation_heatmap.png')
     plt.savefig(output_path)
     plt.close()
 
-    # Analyzing direct and inverse correlations
     direct_correlations = corr_matrix.unstack().sort_values(ascending=False).drop_duplicates()
     inverse_correlations = corr_matrix.unstack().sort_values(ascending=True).drop_duplicates()
 
