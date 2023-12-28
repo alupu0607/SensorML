@@ -3,6 +3,7 @@ from prophet import Prophet
 from prophet.diagnostics import cross_validation, performance_metrics
 from prophet.plot import plot_cross_validation_metric
 from matplotlib import pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
 import os
 
 df = pd.read_csv('SensorMLDataset_small.csv')  # input the path to the CSV file here
@@ -49,11 +50,18 @@ def predict(start=0, end=168, week=0, echo=True):
         ts = df_temp[start:end]
         ts.columns = ['ds', 'y']
 
+        # Normalize the target with minmax
+        scaler = MinMaxScaler()
+        ts['y'] = scaler.fit_transform(ts['y'].values.reshape(-1, 1)).flatten()
+
         model = Prophet()
         model.fit(ts)
 
         future = model.make_future_dataframe(periods=48, freq='H')
         forecast = model.predict(future)
+
+        # Inverse normalized predictions to get the original scale to then compare with the actual values
+        forecast['yhat'] = scaler.inverse_transform(forecast['yhat'].values.reshape(-1, 1)).flatten()
 
         file_path = f"predicted_vs_actual_plots/predicted_vs_actual_{label}_values.png"
         forecast.rename(columns={"ds": "Timestamp", "yhat": "Predicted Value"}, inplace=True)
@@ -66,12 +74,12 @@ def predict(start=0, end=168, week=0, echo=True):
         plt.plot(actual_df['ds'], actual_df['y'], label='Actual')
         plt.plot(forecast['Timestamp'], forecast['Predicted Value'], label='Predicted')
         plt.xlabel('Date')
-        plt.ylabel('Value')
+        plt.ylabel('Normalized Value')  # Update ylabel to reflect normalization
         plt.title(f'Actual vs Predicted - {label}')
         plt.legend()
         plt.savefig(file_path)
-        if echo:
-            plt.show()
+        # if echo:
+        #     plt.show()
         plt.close('all')
 
         models += [model]
@@ -98,16 +106,17 @@ def get_cross_validation(echo=True):
         os.makedirs("cross_validation_values")
     for df_cross_err in df_cv:
         df_p = performance_metrics(df_cross_err)
+
         if echo:
             print(f"---------{labels[i]}---------\n", df_p.tail(1))
-        try:
-            plot_cross_validation_metric(pd.DataFrame(df_cross_err), metric='mape').savefig(
-                f"cross_validation_values/MAPE - {str(labels[i])}.png")
-            i += 1
-        except TypeError:
-            plot_cross_validation_metric(pd.DataFrame(df_cross_err), metric='mae').savefig(
-                f"cross_validation_values/MAE - {str(labels[i])}.png")
-            i += 1
+
+        # Check if MAPE is available, otherwise use MAE
+        metric_to_use = 'mape' if 'mape' in df_p.columns else 'mae'
+
+        plot_cross_validation_metric(pd.DataFrame(df_cross_err), metric=metric_to_use).savefig(
+            f"cross_validation_values/{metric_to_use.upper()} - {str(labels[i])}.png")
+
+        i += 1
 
 
 def main():
