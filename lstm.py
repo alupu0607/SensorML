@@ -125,9 +125,11 @@ def compile_and_fit(model, window, patience=2):
   history = model.fit(window.train, epochs=MAX_EPOCHS,
                       validation_data=window.val,
                       callbacks=[early_stopping])
-  return history
 
-def plot_future_train_set(self, model, plot_col='pres', max_subplots=3, save_folder='train_set_predictions_lstm'):
+  mae_values = history.history['mean_absolute_error']
+  return history, mae_values
+
+def plot_future_train_set(self, model, plot_col, max_subplots=3, save_folder='train_set_predictions_lstm'):
     inputs, labels = self.example
     plt.figure(figsize=(12, 8))
     plot_col_index = self.column_indices[plot_col]
@@ -189,8 +191,9 @@ WindowGenerator.example = example
 WindowGenerator.plot_future_train_set = plot_future_train_set
 
 if __name__ == '__main__':
+
     file_path = "./SensorMLDataset.csv"
-    parameter_to_load = 'pres'
+
     train_df, val_df, test_df = split_data(file_path)
     train_mean = train_df.mean()
     train_std = train_df.std()
@@ -199,81 +202,86 @@ if __name__ == '__main__':
     val_df = (val_df - train_mean) / train_std
     test_df = (test_df - train_mean) / train_std
 
-    wide_window = WindowGenerator(
-        # [[[1], [2], [3], [4], [5]]] [6]
-        # [[[2], [3], [4], [5], [6]]] [7]
-        # [[[3], [4], [5], [6], [7]]] [8]
-        #the model takes 24 consecutive observations as input
-        #i am predicting the pres parameter for the next 24 hours
-        #shift is 1 between consecutive windows
-        input_width=24, label_width=24, shift=1, train_df= train_df,
-        val_df=val_df, test_df=test_df,
-        label_columns=['pres'])
+    df = pd.read_csv(file_path)
+
+    ### Save the average MAE for every param
+    average_mae_per_param = []
+
+    for param in df.columns:
+        if param != 'Timestamp':
+
+            wide_window = WindowGenerator(
+                #the model takes 24 consecutive observations as input
+                #i am predicting the pres parameter 1 hour into the future
+                #shift is 1 between consecutive windows
+                input_width=24, label_width=24, shift=1, train_df= train_df,
+                val_df=val_df, test_df=test_df,
+                label_columns=[param])
+            print(wide_window)
 
 
-    lstm_model = tf.keras.models.Sequential([
-        # Shape [batch, time, features] => [batch, time, lstm_units]
-        tf.keras.layers.LSTM(32, return_sequences=True),
-        # Shape => [batch, time, features]
-        tf.keras.layers.Dense(units=1)
-    ])
-    print('Input shape:', wide_window.example[0].shape)
-    print('Output shape:', lstm_model(wide_window.example[0]).shape)
+            lstm_model = tf.keras.models.Sequential([
+                # Shape [batch, time, features] => [batch, time, lstm_units]
+                tf.keras.layers.LSTM(32, return_sequences=True),
+                # Shape => [batch, time, features]
+                tf.keras.layers.Dense(units=1)
+            ])
+            #print('Input shape:', wide_window.example[0].shape)
+            #print('Output shape:', lstm_model(wide_window.example[0]).shape)
 
-    history = compile_and_fit(lstm_model, wide_window)
+            history, mae_values = compile_and_fit(lstm_model, wide_window)
+            average_mae = np.mean(mae_values)
+            print("Average Mean Absolute Error:", average_mae)
+            average_mae_per_param.append(average_mae)
 
-    val_performance = {}
-    performance = {}
-    IPython.display.clear_output()
-    val_performance['LSTM'] = lstm_model.evaluate(wide_window.val)
-    performance['LSTM'] = lstm_model.evaluate(wide_window.test, verbose=0)
-
-    #wide_window.plot(lstm_model)
-
-    ### TEST ACCURACY OF OBTAINED DATA ###
-    train_predictions = lstm_model.predict(wide_window.train)
-    train_predictions = train_predictions * train_std['pres'] + train_mean['pres']
-
-    val_predictions = lstm_model.predict(wide_window.val)
-    val_predictions = val_predictions * train_std['pres'] + train_mean['pres']
-
-    test_predictions = lstm_model.predict(wide_window.test)
-    test_predictions = test_predictions * train_std['pres'] + train_mean['pres']
+            val_performance = {}
+            performance = {}
+            IPython.display.clear_output()
+            val_performance['LSTM'] = lstm_model.evaluate(wide_window.val)
+            performance['LSTM'] = lstm_model.evaluate(wide_window.test, verbose=0)
 
 
-    # De-normalize actual values
-    train_actual_values = wide_window.train_df['pres'].values * train_std['pres'] + train_mean['pres']
-    train_actual_values = train_actual_values[24:]
-    val_actual_values = wide_window.val_df['pres'].values * train_std['pres'] + train_mean['pres']
-    val_actual_values = val_actual_values[24:]
-    test_actual_values = wide_window.test_df['pres'].values * train_std['pres'] + train_mean['pres']
-    test_actual_values = test_actual_values[24:]
 
-    sets = {
-        'Test': {'actual_values': test_actual_values, 'predicted_values': test_predictions},
-        'Validation': {'actual_values': val_actual_values, 'predicted_values': val_predictions},
-        'Eval': {'actual_values': test_actual_values, 'predicted_values': test_predictions}
-    }
+            ### TEST ACCURACY OF OBTAINED DATA - TO DO ###
+            train_predictions = lstm_model.predict(wide_window.train)
+            train_predictions = train_predictions * train_std[param] + train_mean[param]
 
-    for set_name, set_data in sets.items():
-        actual_values = set_data['actual_values']
-        predicted_values = set_data['predicted_values']
+            val_predictions = lstm_model.predict(wide_window.val)
+            val_predictions = val_predictions * train_std[param] + train_mean[param]
 
-        mae = calculate_mae(actual_values, predicted_values[:, -1])
-        print(f'{set_name} Mean Absolute Error: {mae}')
-
-        #actual_vs_predicted = create_actual_vs_predicted_list(actual_values, predicted_values)
-
-        #print(f"Actual versus Predicted Values for {set_name} Set:")
-        #for actual, predicted in actual_vs_predicted:
-        #    print(f"Actual: {actual}, Predicted: {predicted}")
-
-    wide_window.plot_future_train_set(lstm_model)
+            test_predictions = lstm_model.predict(wide_window.test)
+            test_predictions = test_predictions * train_std[param] + train_mean[param]
 
 
-    print(test_predictions.shape)
-    ### PREDICT THE NEXT 24 HOURS ###
-    print(test_predictions[-24:, -1, 0])
+            # De-normalize actual values - so as to show the last graphic with the next 1 hour prediction
+            train_actual_values = wide_window.train_df[param].values * train_std[param] + train_mean[param]
+            train_actual_values = train_actual_values[:-24]
+            val_actual_values = wide_window.val_df[param].values * train_std[param] + train_mean[param]
+            val_actual_values = val_actual_values[:-24]
+            test_actual_values = wide_window.test_df[param].values * train_std[param] + train_mean[param]
+            test_actual_values = test_actual_values[:-24]
+
+            sets = {
+                'Test': {'actual_values': test_actual_values, 'predicted_values': test_predictions},
+                'Validation': {'actual_values': val_actual_values, 'predicted_values': val_predictions},
+                'Eval': {'actual_values': test_actual_values, 'predicted_values': test_predictions}
+            }
+
+            for set_name, set_data in sets.items():
+                actual_values = set_data['actual_values']
+                predicted_values = set_data['predicted_values']
+
+
+                #actual_vs_predicted = create_actual_vs_predicted_list(actual_values, predicted_values)
+
+                #print(f"Actual versus Predicted Values for {set_name} Set:")
+                #for actual, predicted in actual_vs_predicted:
+                #    print(f"Actual: {actual}, Predicted: {predicted}")
+
+            wide_window.plot_future_train_set(lstm_model,param)
+
+
+            #### PRINT THE LAST HOUR PREDICTED INTO THE FUTURE (SCALED)
 
 
 
