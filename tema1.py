@@ -13,7 +13,16 @@ def load_data(file_path):
 def preprocess_data(df):
     # Drop the hours from the Timestamp column
     df['Timestamp'] = df['Timestamp'].dt.date
+    return df
 
+def preprocess_data_IQR(df):
+    # Drop the hours from the Timestamp column
+    df['Timestamp'] = df['Timestamp'].dt.date
+
+    Q1 = df.quantile(0.25)
+    Q3 = df.quantile(0.75)
+    IQR = Q3 - Q1
+    df = df[~((df < (Q1 - 1.5 * IQR)) | (df > (Q3 + 1.5 * IQR))).any(axis=1)]
     return df
 
 
@@ -24,8 +33,7 @@ def calculate_heatmaps(df):
     for param in df.columns:
         if param != 'Timestamp':
             plt.figure(figsize=(20, 10))
-            ax = sns.heatmap(means[[param]].T, cmap='coolwarm', annot=True, fmt=".2f", linewidths=.5,
-                             cbar_kws={'label': param}, annot_kws={'rotation': 0})
+            ax = sns.heatmap(means[[param]].T, cmap='coolwarm', annot=True, fmt=".2f", linewidths=.5, cbar_kws={'label': param}, annot_kws={'rotation': 0})
             plt.title(f'Mean Value Heatmap for {param} per Day')
             for text in ax.texts:
                 text.set_rotation('vertical')
@@ -33,8 +41,7 @@ def calculate_heatmaps(df):
             plt.close()
 
             plt.figure(figsize=(20, 10))
-            ax = sns.heatmap(medians[[param]].T, cmap='coolwarm', annot=True, fmt=".2f", linewidths=.5,
-                             cbar_kws={'label': param}, annot_kws={'rotation': 0})
+            ax = sns.heatmap(medians[[param]].T, cmap='coolwarm', annot=True, fmt=".2f", linewidths=.5, cbar_kws={'label': param}, annot_kws={'rotation': 0})
             plt.title(f'Median Value Heatmap for {param} per Day')
             for text in ax.texts:
                 text.set_rotation('vertical')
@@ -68,66 +75,63 @@ def feature_selection(df, correlation_threshold=0.8):
     return df
 
 
-def calculate_boxplots(df):
+def calculate_boxplots(df, has_outliers=True):
     for param in df.columns:
         if param != 'Timestamp':
-
-            # Continue with the existing code for boxplots
-            Q1 = df[param].quantile(0.25)
-            Q3 = df[param].quantile(0.75)
-            IQR = Q3 - Q1
-            filter_condition = (df[param] >= Q1 - 1.5 * IQR) & (df[param] <= Q3 + 1.5 * IQR)
-            df_no_outliers = df.loc[filter_condition]
-
             plt.figure(figsize=(20, 10))
-            sns.boxplot(x=df_no_outliers[param])
-            plt.title(f'Boxplot for {param} without Outliers (IQR Method)')
+            if has_outliers:
+                sns.boxplot(x=df[param], showfliers=True)
+            else:
+                sns.boxplot(x=df[param], showfliers=False)
+            if has_outliers:
+                plt.title(f'Boxplot for {param} with Outliers')
+            else:
+                plt.title(f'Boxplot for {param} with NO Outliers')
             plt.xlabel(param)
 
-            plt.savefig(os.path.join("./boxplots", f'boxplot_{param}_no_outliers.png'))
+            if has_outliers:
+                plt.savefig(os.path.join("./boxplots", f'boxplot_{param}.png'))
+            else:
+                plt.savefig(os.path.join("./boxplots", f'boxplot_{param}_no_outl.png'))
+
             plt.close()
 
 
-
-
-
-
-
-def calculate_correlation_matrix(df):
+def calculate_correlation_matrix(df, has_correlating_inputs=True):
     numeric_columns = df.select_dtypes(include='number')
 
     corr_matrix = numeric_columns.corr()
-
     output_dir = "./correlation_matrix"
     os.makedirs(output_dir, exist_ok=True)
+    if has_correlating_inputs:
 
-    plt.figure(figsize=(15, 10))
-    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt=".2f", linewidths=.5,
-                cbar_kws={'label': 'Correlation Coefficient'})
-    plt.title('Correlation Matrix Heatmap')
+        plt.figure(figsize=(15, 10))
+        sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt=".2f", linewidths=.5,
+                    cbar_kws={'label': 'Correlation Coefficient'})
+        plt.title('Correlation Matrix Heatmap')
 
-    output_path = os.path.join(output_dir, 'correlation_heatmap.png')
-    plt.savefig(output_path)
-    plt.close()
+        output_path = os.path.join(output_dir, 'correlation_heatmap_with_correlating_inputs.png')
+        plt.savefig(output_path)
+        plt.close()
+    else:
+        plt.figure(figsize=(15, 10))
+        sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt=".2f", linewidths=.5,
+                    cbar_kws={'label': 'Correlation Coefficient'})
+        plt.title('Correlation Matrix Heatmap')
 
-    direct_correlations = corr_matrix.unstack().sort_values(ascending=False).drop_duplicates()
-    inverse_correlations = corr_matrix.unstack().sort_values(ascending=True).drop_duplicates()
-    #comment these cand vrei sa eliberezi consola
-    # print("Top 5 Direct Correlations:")
-    # print(direct_correlations.head(5))
-    #
-    # print("\nTop 5 Inverse Correlations:")
-    # print(inverse_correlations.head(5))
+        output_path = os.path.join(output_dir, 'correlation_heatmap.png')
+        plt.savefig(output_path)
+        plt.close()
 
 
 if __name__ == '__main__':
-    file_path = "./SensorMLDataset_small.csv"
+    file_path = "./SensorMLDataset.csv"
     df = load_data(file_path)
-    df = preprocess_data(df)
-    df = feature_selection(df, correlation_threshold=0.8)
-    # Save the modified DataFrame to a new CSV file
-    new_csv_path = "./SensorMLDataset_small_modified.csv"
-    df.to_csv(new_csv_path, index=False)
+
+    df = preprocess_data_IQR(df)
+    calculate_correlation_matrix(df, has_correlating_inputs=True)
+    df = feature_selection(df, correlation_threshold=0.80)
+    calculate_correlation_matrix(df, has_correlating_inputs=False)
+    calculate_boxplots(df, False)
     calculate_heatmaps(df)
-    calculate_boxplots(df)
-    calculate_correlation_matrix(df)
+

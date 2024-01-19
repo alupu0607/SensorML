@@ -5,11 +5,37 @@ import pandas as pd
 import tensorflow as tf
 from sklearn.metrics import mean_absolute_error
 import os
+
+def feature_selection(df, correlation_threshold=0.8):
+    numeric_columns = df.select_dtypes(include='number')
+    corr_matrix = numeric_columns.corr()
+
+    # Identify parameters with correlations above the threshold
+    high_correlation_pairs = [(col1, col2, corr)
+                              for col1 in corr_matrix.columns
+                              for col2 in corr_matrix.columns
+                              if col1 < col2 and abs(corr := corr_matrix.loc[col1, col2]) > correlation_threshold]
+
+    # Create a set to store variables to drop
+    variables_to_drop = set()
+
+    for col1, col2, _ in high_correlation_pairs:
+        # Add the variable with a higher number of missing values to the set
+        if df[col1].isnull().sum() > df[col2].isnull().sum():
+            variables_to_drop.add(col2)
+        else:
+            variables_to_drop.add(col1)
+
+    # Drop the variables with high correlations and more missing values
+    df.drop(variables_to_drop, axis=1, inplace=True)
+    print(variables_to_drop)
+    return df
 def split_data(file_path):
     # The data is not randomly shuffled:
     # It ensures that chopping the data into windows of consecutive samples is still possible.
 
     df = pd.read_csv(file_path)
+    df=feature_selection(df)
     date_time = pd.to_datetime(df.pop('Timestamp'),format='%m/%d/%Y %H:%M')
     print(df.shape[1]) # number of features (Timestamp is not a fetaure)
     n = len(df)
@@ -203,6 +229,8 @@ if __name__ == '__main__':
     test_df = (test_df - train_mean) / train_std
 
     df = pd.read_csv(file_path)
+
+    df=feature_selection(df)
 
     ### Save the average MAE for every param
     average_mae_per_param = []

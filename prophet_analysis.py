@@ -6,7 +6,35 @@ from matplotlib import pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 import os
 
+
+def feature_selection(df, correlation_threshold=0.8):
+    numeric_columns = df.select_dtypes(include='number')
+    corr_matrix = numeric_columns.corr()
+
+    # Identify parameters with correlations above the threshold
+    high_correlation_pairs = [(col1, col2, corr)
+                              for col1 in corr_matrix.columns
+                              for col2 in corr_matrix.columns
+                              if col1 < col2 and abs(corr := corr_matrix.loc[col1, col2]) > correlation_threshold]
+
+    # Create a set to store variables to drop
+    variables_to_drop = set()
+
+    for col1, col2, _ in high_correlation_pairs:
+        # Add the variable with a higher number of missing values to the set
+        if df[col1].isnull().sum() > df[col2].isnull().sum():
+            variables_to_drop.add(col2)
+        else:
+            variables_to_drop.add(col1)
+
+    # Drop the variables with high correlations and more missing values
+    df.drop(variables_to_drop, axis=1, inplace=True)
+    print(variables_to_drop)
+    return df
+
+
 df = pd.read_csv('SensorMLDataset_small.csv')  # input the path to the CSV file here
+df=feature_selection(df)
 labels = df.columns
 
 
