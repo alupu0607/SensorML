@@ -10,7 +10,17 @@ def load_data(file_path):
 def preprocess_data(df):
     # Drop the hours from the Timestamp column
     df['Timestamp'] = df['Timestamp'].dt.date
+    return df
 
+
+def preprocess_data_IQR(df):
+    # Drop the hours from the Timestamp column
+    df['Timestamp'] = df['Timestamp'].dt.date
+
+    Q1 = df.quantile(0.25)
+    Q3 = df.quantile(0.75)
+    IQR = Q3 - Q1
+    df = df[~((df < (Q1 - 1.5 * IQR)) | (df > (Q3 + 1.5 * IQR))).any(axis=1)]
     return df
 
 def calculate_heatmaps(df):
@@ -35,15 +45,25 @@ def calculate_heatmaps(df):
             plt.savefig(os.path.join("./median_values", f'median_heatmap_{param}.png'))
             plt.close()
 
-def calculate_boxplots(df):
+def calculate_boxplots(df, has_outliers=True):
     for param in df.columns:
         if param != 'Timestamp':
             plt.figure(figsize=(20, 10))
-            sns.boxplot(x=df[param], showfliers=True)
-            plt.title(f'Boxplot for {param} with Outliers')
+            if has_outliers:
+                sns.boxplot(x=df[param], showfliers=True)
+            else:
+                sns.boxplot(x=df[param], showfliers=False)
+            if has_outliers:
+                plt.title(f'Boxplot for {param} with Outliers')
+            else:
+                plt.title(f'Boxplot for {param} with NO Outliers')
             plt.xlabel(param)
 
-            plt.savefig(os.path.join("./boxplots", f'boxplot_{param}.png'))
+            if has_outliers:
+                plt.savefig(os.path.join("./boxplots", f'boxplot_{param}.png'))
+            else:
+                plt.savefig(os.path.join("./boxplots", f'boxplot_{param}_no_outl.png'))
+
             plt.close()
 
 def calculate_correlation_matrix(df):
@@ -73,13 +93,16 @@ def calculate_correlation_matrix(df):
     print(inverse_correlations.head(5))
 
 if __name__ == '__main__':
-    file_path = "./SensorMLDataset_small.csv"
+    file_path = "./SensorMLDataset.csv"
     df = load_data(file_path)
+    df2 = load_data(file_path)
     df = preprocess_data(df)
-    calculate_heatmaps(df)
-    calculate_boxplots(df)
-    calculate_correlation_matrix(df)
 
+    calculate_boxplots(df, True)
 
+    df2 = preprocess_data_IQR(df2)
 
+    calculate_boxplots(df2, False)
+    calculate_heatmaps(df2)
 
+    calculate_correlation_matrix(df2)

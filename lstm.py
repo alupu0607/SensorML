@@ -5,11 +5,26 @@ import pandas as pd
 import tensorflow as tf
 from sklearn.metrics import mean_absolute_error
 import os
-def split_data(file_path):
+
+
+def load_data(file_path="./SensorMLDataset.csv"):
+    data = pd.read_csv(file_path, parse_dates=['Timestamp'])
+    return data
+
+def preprocess_data_IQR(df):
+    # Drop the hours from the Timestamp column
+    df['Timestamp'] = df['Timestamp'].dt.date
+
+    Q1 = df.quantile(0.25)
+    Q3 = df.quantile(0.75)
+    IQR = Q3 - Q1
+    df = df[~((df < (Q1 - 1.5 * IQR)) | (df > (Q3 + 1.5 * IQR))).any(axis=1)]
+    return df
+
+def split_data(df):
     # The data is not randomly shuffled:
     # It ensures that chopping the data into windows of consecutive samples is still possible.
 
-    df = pd.read_csv(file_path)
     date_time = pd.to_datetime(df.pop('Timestamp'),format='%m/%d/%Y %H:%M')
     print(df.shape[1]) # number of features (Timestamp is not a fetaure)
     n = len(df)
@@ -193,8 +208,10 @@ WindowGenerator.plot_future_train_set = plot_future_train_set
 if __name__ == '__main__':
 
     file_path = "./SensorMLDataset.csv"
+    data = load_data(file_path)
+    df = preprocess_data_IQR(data)
 
-    train_df, val_df, test_df = split_data(file_path)
+    train_df, val_df, test_df = split_data(df)
     train_mean = train_df.mean()
     train_std = train_df.std()
 
@@ -202,7 +219,7 @@ if __name__ == '__main__':
     val_df = (val_df - train_mean) / train_std
     test_df = (test_df - train_mean) / train_std
 
-    df = pd.read_csv(file_path)
+    # df = pd.read_csv(file_path)
 
     ### Save the average MAE for every param
     average_mae_per_param = []
