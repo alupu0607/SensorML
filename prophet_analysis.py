@@ -74,7 +74,10 @@ def predict(start=0, end=15913, week=0, echo=True):
         if label == 'umid':
             for value in forecast['yhat'].tail(48):
                 humidity_array += [value]
-
+        if label in ["lumina", "B500", "G550", "O600", "R650", "V450", "Y570"]:
+            for i in range(len(forecast['yhat'])):
+                if forecast['yhat'][i] < 0:
+                    forecast['yhat'][i] = 0
         forecast.rename(columns={"ds": "Timestamp", "yhat": "Predicted Value"}, inplace=True)
         if echo:
             print(f"----------- {label} ------------")

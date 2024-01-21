@@ -1,0 +1,115 @@
+body {
+    font-family: 'Josefin Sans', sans-serif;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    background-color: #333;
+    color: #d7d7d9;
+    overflow-x: hidden;
+}
+
+.navbar {
+    background-color: #222; 
+    padding: 4px 15px;
+    width: 100%;
+    position: fixed;
+    top: 0;
+    z-index: 1;
+}
+
+.main-container {
+    display: flex;
+    width: 100vh;
+    flex-direction: column;
+    justify-content: center;
+    margin-top: 7rem;
+}
+
+.image-container {
+    border: 2px solid #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    width: 50vw;
+}
+
+#displayed-image {
+    width: 100%;
+    height: auto;
+}
+
+.select-container {
+    margin: 0rem 1rem;
+    width: 10vw;
+    display: flex;
+    flex-direction: row;
+}
+
+
+label {
+    margin-right: 10px;
+}
+
+select, button {
+    padding: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    background-color:  	#5A5A5A;
+    border: none;
+    color:#d7d7d9;
+    border-radius: 3px;
+}
+
+button{
+    display: flex;
+    justify-self: baseline;
+    height: 2.4rem;
+}
+option{
+    color: #d7d7d9;
+}
+
+select:hover {
+    background-color: 	#5A5A5A;
+    cursor: pointer;
+}
+
+.select-holder{
+    margin-right: 1rem;
+}
+
+.content{
+    display: flex;
+    flex-direction: row;
+    width: 100vw;
+}
+
+.prediction-result{
+    width: 35vw;
+}
+
+.visualizer{
+   padding: 0 4rem;
+}
+
+
+table {
+    width: 20rem;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.information-container{
+    margin-top: 5rem;
+    margin-left: 4rem;
+    width: 100vw;
+    margin-bottom: 5rem;
+}
+
+th, td {
+    border: 3px solid #333;
+    text-align: left;
+    padding: 8px;
+    background-color: white;
+    color:#333;
+}

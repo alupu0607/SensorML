@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <title>SensorML</title>
+</head>
+<body>
+
+<div class="navbar">
+    <h2>SensorML</h2>
+</div>
+
+<div class="main-container">
+    <section class="content">
+        <div class="visualizer">
+            <div class="image-container">
+                <img id="displayed-image" src="img/lstm/pres.png" alt="No available data.">
+            </div>
+            <div class="select-container">
+                <div class="select-holder">
+                    <label for="model-selector">Model:</label>
+                    <select id="model-selector" onchange="changeModel(this.value)">
+                        <option value="lstm">LSTM</option>
+                        <option value="prophet">Prophet</option>
+                        <option value="seq2seq">Seq2Seq</option>
+                    </select>
+                </div>
+                <div class="select-holder">
+                    <label for="image-selector">Parameters:</label>
+                    <select id="image-selector" onchange="changeImage(document.getElementById('model-selector').value, this.value, document.getElementById('data-selector').value)">
+                        <option value="pres">Pressure</option>
+                        <option value="umid">Humidity</option>
+                        <option value="lumina">Total Luminosity</option>
+                        <option value="temp1">Temperature (A)</option>
+                        <option value="temp2">Temperature (B)</option>
+                        <option value="temps1">Soil temperature (A)</option>
+                        <option value="temps2">Soil temperature (B)</option>
+                        <option value="V450">Violet luminosity (V450)</option>
+                        <option value="B500">Blue luminosity (B500)</option>
+                        <option value="G550">Green luminosity (G550)</option>
+                        <option value="Y570">Yellow luminosity (Y570)</option>
+                        <option value="O600">Orange luminosity (O600)</option>
+                        <option value="R650">Red luminosity (R650)</option>
+                    </select>
+                </div>
+                <div class="select-holder">
+                    <label for="data-selector">Data:</label>
+                    <select id="data-selector" onchange="changeData(this.value)">
+                        <option value="test">Test</option>
+                        <option value="train">Train</option>
+                    </select>
+                </div>
+                
+                <div class="select-holder">
+                    <label for="image-selector"></label>
+                </div>
+            </div>
+        </div>
+        <div class="prediction-result">
+            <h1 id="prediction-title">Disease prediction for the future</h1>
+            <img src="/img/infos/function2.png" style="width: 20rem;">
+            <h3>Disease risk:</h3>
+            <ul>
+                <li id="early-blight-risk">Early Blight:</li>
+                <li id="gray-mold-risk">Gray Mold:</li>
+                <li id="late-blight-risk">Late Blight:</li>
+                <li id="late-mold-risk">Late Mold:</li>
+                <li id="powdery-mildew-risk">Powdery Mildew:</li>
+            </ul>
+        </div>
+    </section>
+</div>
+
+<div class="information-container">
+    <h1>Info</h1>
+    <table>
+        <tr>
+            <th>Diseases and symptoms</th>
+            <th>Optimal conditions for the development of diseases</th>
+        </tr>
+        <tr>
+            <td><img src="img/infos/boli_si_simptome.PNG" style="width:60rem;" alt="Boli si simptome"></td>
+            <td><img src="img/infos/conditii_optime_de_dezvoltare_a_bolilor.PNG" style="width: 22rem;" alt="Conditii optime"></td>
+        </tr>
+    </table>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
