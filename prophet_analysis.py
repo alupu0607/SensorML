@@ -5,8 +5,12 @@ from prophet.plot import plot_cross_validation_metric
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 import os
+from tema1 import preprocess_data_IQR
+from tema1 import load_data
+df = load_data('SensorMLDataset_small.csv')  # input the path to the CSV file here
 
-df = pd.read_csv('SensorMLDataset_small.csv')  # input the path to the CSV file here
+# OUTLIER REMOVAL
+df = preprocess_data_IQR(df)
 labels = df.columns
 
 
