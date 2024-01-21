@@ -130,9 +130,9 @@ if __name__ == '__main__':
     df = load_data(file_path)
 
     df = preprocess_data_IQR(df)
-    calculate_boxplots(df, False)
+    calculate_boxplots(df, True)
     calculate_heatmaps(df)
 
-    calculate_correlation_matrix(df, has_correlating_inputs=True)
-    df = feature_selection(df, correlation_threshold=0.90)
-    calculate_correlation_matrix(df, has_correlating_inputs=False)
+    #calculate_correlation_matrix(df, has_correlating_inputs=True)
+    #df = feature_selection(df, correlation_threshold=0.90)
+    #calculate_correlation_matrix(df, has_correlating_inputs=False)

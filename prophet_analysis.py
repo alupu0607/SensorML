@@ -1,3 +1,6 @@
+import json
+from operator import add
+
 import pandas as pd
 from prophet import Prophet
 from prophet.diagnostics import cross_validation, performance_metrics
@@ -7,22 +10,23 @@ from sklearn.preprocessing import MinMaxScaler
 import os
 from tema1 import preprocess_data_IQR
 from tema1 import load_data
-df = load_data('SensorMLDataset_small.csv')  # input the path to the CSV file here
+from risk_prediction import predict_risk
+df = load_data('SensorMLDataset.csv')  # input the path to the CSV file here
 
-# OUTLIER REMOVAL
-df = preprocess_data_IQR(df)
+# # OUTLIER REMOVAL
+# df = preprocess_data_IQR(df)
 labels = df.columns
 
 
-def predict(start=0, end=168, week=0, echo=True):
+def predict(start=0, end=15913, week=0, echo=True):
     """Trains a Prophet model on the variables from the provided CSV file
         Parameters
         ----------
         start : int, optional
             The start row from the CSV file from which the training begins (default is 0)
         end : int, optional
-            The end row from the CSV file up to which the model trains (default is 168, as the current CSV
-            file has hourly data, meaning first week)
+            The end row from the CSV file up to which the model trains (default is 15913, as the current CSV
+            file has hourly data, meaning up until last hour)
         week: int, optional
             Train on the data from the specified week (default is 0). If provided, it ignores start and end parameters
         echo: bool, optional
@@ -40,23 +44,18 @@ def predict(start=0, end=168, week=0, echo=True):
             start = (week - 1) * 168
             end = (start + 169) % 1001
     models = []  # for each column, train the model on that variable and add it to the list
+    air_array = []
+    air_temp1_array = []
+    air_temp2_array = []
+    humidity_array = []
     if not os.path.exists("predicted_vs_actual_plots"):
         os.makedirs("predicted_vs_actual_plots")
 
     for label in labels[1:]:
         df_temp = df[[labels[0], label]]
 
-        if end + 48 > 1000:
-            end -= 48
-        actual_df = df_temp[start:(end + 48)]
-        actual_df.columns = ['ds', 'y']
-
         ts = df_temp[start:end]
         ts.columns = ['ds', 'y']
-
-        # Normalize the target with minmax
-        scaler = MinMaxScaler()
-        ts['y'] = scaler.fit_transform(ts['y'].values.reshape(-1, 1)).flatten()
 
         model = Prophet()
         model.fit(ts)
@@ -64,30 +63,39 @@ def predict(start=0, end=168, week=0, echo=True):
         future = model.make_future_dataframe(periods=48, freq='H')
         forecast = model.predict(future)
 
-        # Inverse normalized predictions to get the original scale to then compare with the actual values
-        forecast['yhat'] = scaler.inverse_transform(forecast['yhat'].values.reshape(-1, 1)).flatten()
+        file_path = f"predicted_vs_actual_plots/{label}.png"
 
-        file_path = f"predicted_vs_actual_plots/predicted_vs_actual_{label}_values.png"
+        if label == 'temp1':
+            for value in forecast['yhat'].tail(48):
+                air_temp1_array += [value]
+        if label == 'temp2':
+            for value in forecast['yhat'].tail(48):
+                air_temp2_array += [value]
+        if label == 'umid':
+            for value in forecast['yhat'].tail(48):
+                humidity_array += [value]
+
         forecast.rename(columns={"ds": "Timestamp", "yhat": "Predicted Value"}, inplace=True)
-
         if echo:
             print(f"----------- {label} ------------")
             print(forecast[['Timestamp', 'Predicted Value']].tail(48))
 
         plt.figure(figsize=(10, 6))
-        plt.plot(actual_df['ds'], actual_df['y'], label='Actual')
-        plt.plot(forecast['Timestamp'], forecast['Predicted Value'], label='Predicted')
+        plt.plot(ts['ds'].tail(96), ts['y'].tail(96), label='Actual')
+        plt.plot(forecast['Timestamp'].tail(48), forecast['Predicted Value'].tail(48), label='Predicted')
         plt.xlabel('Date')
-        plt.ylabel('Normalized Value')  # Update ylabel to reflect normalization
+        plt.ylabel('Value')
         plt.title(f'Actual vs Predicted - {label}')
         plt.legend()
         plt.savefig(file_path)
-        # if echo:
-        #     plt.show()
-        plt.close('all')
+
+        plt.close()
 
         models += [model]
+    air_array = list(map(add, air_temp1_array, air_temp2_array))
+    air_array = [value / 2 for value in air_array]
 
+    predict_risk(air_array, humidity_array, 'prophet')
     return models  # return trained models
 
 
@@ -124,8 +132,8 @@ def get_cross_validation(echo=True):
 
 
 def main():
-    predict(week=3)
-    get_cross_validation()
+    predict()
+    # get_cross_validation()
 
 
 if __name__ == '__main__':

@@ -1,3 +1,5 @@
+from operator import add
+
 import IPython.display
 import matplotlib.pyplot as plt
 import numpy as np
@@ -6,6 +8,7 @@ import tensorflow as tf
 from sklearn.metrics import mean_absolute_error
 import os
 
+from risk_prediction import predict_risk
 from tema1 import preprocess_data_IQR
 from tema1 import load_data
 def split_data(file_path):
@@ -241,16 +244,27 @@ def plot_future_train_set(self, model, plot_col, max_subplots=3, save_folder='tr
 def calculate_mae(actual_values, predicted_values):
     mae = mean_absolute_error(actual_values, predicted_values[:, -1])
     return mae
-def create_actual_vs_predicted_list(actual_values, predicted_values):
-    actual_vs_predicted = []
 
-    for i in range(len(predicted_values)):
-        actual = actual_values[i]
-        predicted = predicted_values[i][-1]
-        actual_vs_predicted.append((actual, predicted))
+def plot_predictions_vs_actual(test_predictions, test_actual_values, param, save_folder='test_set_predictions_lstm'):
+    shifted_predictions = np.roll(test_predictions[-1], 1)
 
-    return actual_vs_predicted
+    plt.figure(figsize=(12, 6))
+    plt.plot(shifted_predictions, label='Predictions', marker='x', linestyle='--')
+    plt.plot(test_actual_values[-24:], label='Actual Values', marker='o', linestyle='-')
 
+    plt.xlabel('Time Step')
+    plt.ylabel(param)
+    plt.title(f'{param} Predictions vs Label Values')
+
+    plt.legend()
+    plt.grid(True)
+
+    # Ensure that the save_folder directory exists
+    os.makedirs(save_folder, exist_ok=True)
+
+    save_path = os.path.join(save_folder, f'{param}.png')
+    plt.savefig(save_path)
+    plt.close()
 
 MAX_EPOCHS = 20
 WindowGenerator.split_window = split_window
@@ -281,8 +295,14 @@ if __name__ == '__main__':
     ### Save the average MAE for every param
     average_mae_per_param = []
 
+    params_to_track = ['umid', 'temp1', 'temp2']
+    temp1 = []
+    temp2 = []
+    humidity = []
+
+
     for param in df.columns:
-        if param != 'Timestamp' and param == 'pres':
+        if param != 'Timestamp':
 
             wide_window = WindowGenerator(
                 #the model takes 24 consecutive observations as input
@@ -300,8 +320,18 @@ if __name__ == '__main__':
                 # Shape => [batch, time, features]
                 tf.keras.layers.Dense(units=1)
             ])
-            #print('Input shape:', wide_window.example[0].shape)
-            #print('Output shape:', lstm_model(wide_window.example[0]).shape)
+            if param in params_to_track:
+                test_predictions = lstm_model.predict(wide_window.test)
+                test_predictions = test_predictions * train_std[param] + train_mean[param]
+                if param == 'temp1':
+                    for value in test_predictions[-1]:
+                        temp1 += [value[0]]
+                elif param == 'temp2':
+                    for value in test_predictions[-1]:
+                        temp2 += [value[0]]
+                else:
+                    for value in test_predictions[-1]:
+                        humidity += [value[0]]
 
             history, mae_values = compile_and_fit(lstm_model, wide_window)
             average_mae = np.mean(mae_values)
@@ -309,9 +339,25 @@ if __name__ == '__main__':
             average_mae_per_param.append(average_mae)
 
 
-            wide_window.plot_future_train_set(lstm_model,param)
-            wide_window.plot_future_test_set(lstm_model,param,train_mean, train_std)
 
+            ### LAST PREDICTIONS for a 24 hours window, 1 hour into the future ###
+            test_predictions = lstm_model.predict(wide_window.test)
+            test_predictions = test_predictions * train_std[param] + train_mean[param]
+
+            # This is that one actual prediction into the future
+            print(test_predictions[-1])
+
+            test_actual_values = wide_window.test_df[param].values * train_std[param] + train_mean[param]
+            print(test_actual_values[-24:])
+
+            plot_predictions_vs_actual(test_predictions, test_actual_values, param)
+
+            wide_window.plot_future_train_set(lstm_model,param)
+            #wide_window.plot_future_test_set(lstm_model,param,train_mean, train_std)
+
+    air_array = list(map(add, temp1, temp2))
+    air_array = [value / 2 for value in air_array]
+    predict_risk(air_array, humidity, 'lstm')
 
 
 
