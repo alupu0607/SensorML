@@ -146,61 +146,6 @@ def compile_and_fit(model, window, patience=2):
   return history, mae_values
 
 
-def plot_future_test_set(self, model, plot_col, train_mean, train_std, save_folder='test_set_predictions_lstm'):
-    inputs, labels = self.test_last_predictions
-
-    plt.figure(figsize=(12, 8))
-    plot_col_index = self.column_indices[plot_col]
-
-    if self.label_columns:
-        label_col_index = self.label_columns_indices.get(plot_col, None)
-    else:
-        label_col_index = plot_col_index
-
-    if label_col_index is None:
-        return
-
-    plt.ylabel(f'{plot_col} [original scale]')
-
-    # De-normalize the inputs, labels, and predictions
-    last_24_hours_inputs_denormalized = inputs * train_std[plot_col] + train_mean[plot_col]
-    labels_denormalized = labels * train_std[plot_col] + train_mean[plot_col]
-
-    plt.plot(self.input_indices, last_24_hours_inputs_denormalized[-1, :, plot_col_index],
-             label='Inputs', marker='.', zorder=-10)
-
-    plt.scatter(self.label_indices, labels_denormalized[-1, :, label_col_index],
-                edgecolors='k', label='Actual Values', c='#2ca02c', s=64)
-
-    if model is not None:
-        last_24_hours_predictions = model(inputs)
-        last_24_hours_predictions_denormalized = last_24_hours_predictions * train_std[plot_col] + train_mean[plot_col]
-
-        plt.scatter(self.label_indices, last_24_hours_predictions_denormalized[-1, :, label_col_index],
-                    marker='X', edgecolors='k', label='Predictions (Last 24 Hours)',
-                    c='#ff7f0e', s=64)
-
-    plt.legend()
-    plt.xlabel('Timestamp')
-    save_path = os.path.join(save_folder, f'{plot_col}.png')
-    plt.savefig(save_path)
-    plt.close()
-
-
-def plot_future_test_set2(self, model, plot_col, train_mean, train_std, save_folder='test_set_predictions_lstm'):
-    inputs, labels = self.test_last_predictions
-
-    print(self.test_last_predictions)
-
-    predictions = model(inputs)
-
-    inputs = inputs * train_std[plot_col] + train_mean[plot_col]
-    labels= labels * train_std[plot_col] + train_mean[plot_col]
-    predictions = predictions * train_std[plot_col] + train_mean[plot_col]
-
-    print(labels)
-    #print(predictions)
-
 
 
 def plot_future_train_set(self, model, plot_col, max_subplots=3, save_folder='train_set_predictions_lstm'):
@@ -275,7 +220,6 @@ WindowGenerator.test = test
 WindowGenerator.example = example
 WindowGenerator.test_last_predictions = test_last_predictions
 WindowGenerator.plot_future_train_set = plot_future_train_set
-WindowGenerator.plot_future_test_set = plot_future_test_set
 if __name__ == '__main__':
 
     file_path = "./SensorMLDataset.csv"
@@ -320,6 +264,14 @@ if __name__ == '__main__':
                 # Shape => [batch, time, features]
                 tf.keras.layers.Dense(units=1)
             ])
+
+
+            history, mae_values = compile_and_fit(lstm_model, wide_window)
+            average_mae = np.mean(mae_values)
+            print("Average Mean Absolute Error:", average_mae)
+            average_mae_per_param.append(average_mae)
+
+
             if param in params_to_track:
                 test_predictions = lstm_model.predict(wide_window.test)
                 test_predictions = test_predictions * train_std[param] + train_mean[param]
@@ -332,13 +284,6 @@ if __name__ == '__main__':
                 else:
                     for value in test_predictions[-1]:
                         humidity += [value[0]]
-
-            history, mae_values = compile_and_fit(lstm_model, wide_window)
-            average_mae = np.mean(mae_values)
-            print("Average Mean Absolute Error:", average_mae)
-            average_mae_per_param.append(average_mae)
-
-
 
             ### LAST PREDICTIONS for a 24 hours window, 1 hour into the future ###
             test_predictions = lstm_model.predict(wide_window.test)
