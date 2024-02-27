@@ -1,5 +1,5 @@
 # About
-The file "SensorMLDataset.csv" contains time-series data tracking the changes in various parameters such as temperature, light, humidity, and pressure, specifically for a tomato cultivation environment.
+"SensorMLDataset.csv" contains time-series data tracking the changes in various parameters such as temperature, light, humidity, and pressure, specifically for a tomato cultivation environment.
 We used Tensorflow and Python for the implementation.
 
 
