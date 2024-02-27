@@ -10,6 +10,8 @@ Our application predicts the evolution of environmental parameters for tomato cu
 
 Aditionally, our application predicts the disease risk by using an aggregate formula which takes into account the air temperature and the air humidity.
 
+# Team Members
 
-
-
+- Andreea Lupu: LSTM + Seq2Seq implementation
+- Stefan Danila: Prophet analysis + risk formula
+- Tudor Stroescu: Frontend 
