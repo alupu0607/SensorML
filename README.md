@@ -11,8 +11,8 @@ Our application predicts the evolution of environmental parameters for tomato cu
 Aditionally, our application predicts the disease risk by using an aggregate formula which takes into account the air temperature and the air humidity.
 
 <img width="838" alt="image" src="https://github.com/alupu0607/SensorML/assets/100222484/7dffae1e-0218-44f1-a66f-2dfd561ddba6">
-<img width="770" alt="image" src="https://github.com/alupu0607/SensorML/assets/100222484/ee7dac3b-a111-4aca-8452-bb92921874d3">
-<img width="841" alt="image" src="https://github.com/alupu0607/SensorML/assets/100222484/b846fa41-d3fb-4f67-af4b-09424f23802f">
+<img width="838" alt="image" src="https://github.com/alupu0607/SensorML/assets/100222484/ee7dac3b-a111-4aca-8452-bb92921874d3">
+<img width="838" alt="image" src="https://github.com/alupu0607/SensorML/assets/100222484/b846fa41-d3fb-4f67-af4b-09424f23802f">
 
 
 # Team Members
