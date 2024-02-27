@@ -10,7 +10,7 @@ Our application predicts the evolution of environmental parameters for tomato cu
 
 Aditionally, our application predicts the disease risk by using an aggregate formula which takes into account the air temperature and the air humidity.
 
-![LSTM](https://imgur.com/a/QF9WBUAg "LSTM")
+![LSTM](https://imgur.com/bEZSIiX "LSTM")
 
 
 # Team Members
