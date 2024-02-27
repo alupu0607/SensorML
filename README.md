@@ -19,4 +19,7 @@ Aditionally, our application predicts the disease risk by using an aggregate for
 
 - Andreea Lupu: LSTM + Seq2Seq implementation
 - Stefan Danila: Prophet analysis + risk formula
-- Tudor Stroescu: Frontend 
+- Tudor Stroescu: Frontend
+
+# References 
+https://www.tensorflow.org/api_docs/python/tf/keras/layers/LSTM
