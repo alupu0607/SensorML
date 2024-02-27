@@ -1,7 +1,5 @@
-# About
+# General outlook
 "SensorMLDataset.csv" contains time-series data tracking the changes in various parameters such as temperature, light, humidity, and pressure, specifically for a tomato cultivation environment.
-We used Tensorflow and Python for the implementation.
-
 
 Our application predicts the evolution of environmental parameters for tomato cultivation using a combination of statistical and machine learning models:
 - **Prophet**: A statistical model for forecasting time series data.
@@ -14,6 +12,11 @@ Aditionally, our application predicts the disease risk by using an aggregate for
 <img width="838" alt="image" src="https://github.com/alupu0607/SensorML/assets/100222484/ee7dac3b-a111-4aca-8452-bb92921874d3">
 <img width="838" alt="image" src="https://github.com/alupu0607/SensorML/assets/100222484/b846fa41-d3fb-4f67-af4b-09424f23802f">
 
+# Implementation
+We used Tensorflow and Python for the implementation.
+- **The LSTM model** predicts 1 hour into the future by using a history of 24 hours; outliers were eliminated from the dataset before training
+- **The Seq2Seq model** predicts 1 hour into th future by using a history of 24 hours; outliers were eliminated from the dataset before training.
+-  **Prophet** predicts 48 hours into the future.
 
 # Team Members
 
