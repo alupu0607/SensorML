@@ -1,4 +1,4 @@
-# General outlook
+# General overview
 "SensorMLDataset.csv" contains time-series data tracking the changes in various parameters such as temperature, light, humidity, and pressure, specifically for a tomato cultivation environment.
 
 Our application predicts the evolution of environmental parameters for tomato cultivation using a combination of statistical and machine learning models:
